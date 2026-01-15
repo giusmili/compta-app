@@ -1,0 +1,5 @@
+{
+  "name": "ComptaExpert AI",
+  "description": "Une application de comptabilité intelligente pour gérer votre chiffre d'affaires, calculer vos bénéfices et simuler vos charges sociales selon votre statut juridique (Auto-entrepreneur, SASU, EURL) avec des analyses propulsées par l'IA Gemini.",
+  "requestFramePermissions": []
+}
