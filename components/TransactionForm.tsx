@@ -36,8 +36,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
         <i className="fas fa-plus-circle text-indigo-400"></i>
         Nouvelle Transaction
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <div className="flex flex-col gap-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex flex-col gap-1 lg:col-span-2">
           <label htmlFor="tx-label" className="text-xs font-bold text-white uppercase tracking-wider">Libelle</label>
           <input
             id="tx-label"
@@ -83,7 +83,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
             <option value="EXPENSE">Depense</option>
           </select>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 lg:col-span-2">
           <label htmlFor="tx-category" className="text-xs font-bold text-white uppercase tracking-wider">Categorie</label>
           <select
             id="tx-category"
