@@ -8,7 +8,7 @@ Application pour aider les entrepreneurs à vérifier et suivre leur comptabilit
 **Pré-requis :** Node.js
 
 1. Installer les dépendances : `npm install`
-2. Renseigner `API_KEY` dans [.env.local](.env.local)
+2. Renseigner `API_KEY` dans `env.local`
 3. Lancer l'appli : `npm run dev`
 
 ## Notes techniques
