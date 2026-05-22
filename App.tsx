@@ -1,25 +1,32 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Transaction, AppState, BusinessStatus } from './types';
 import { STATUS_RATES } from './constants';
 import { calculateFinancials, formatCurrency } from './utils/calculations';
 import SummaryCard from './components/SummaryCard';
 import TransactionForm from './components/TransactionForm';
-import { analyzeFinancials } from './services/geminiService';
+import ChatModal from './components/ChatModal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+type ChartEntry = { name: string; value: number; color: string };
+
+const DEFAULT_STATE: AppState = {
+  transactions: [],
+  status: BusinessStatus.MICRO_SERVICE,
+  customChargeRate: 0.212,
+};
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('compta_data');
-    return saved ? JSON.parse(saved) : {
-      transactions: [],
-      status: BusinessStatus.MICRO_SERVICE,
-      customChargeRate: 0.212
-    };
+    try {
+      const saved = localStorage.getItem('compta_data');
+      return saved ? JSON.parse(saved) : DEFAULT_STATE;
+    } catch {
+      return DEFAULT_STATE;
+    }
   });
 
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('compta_data', JSON.stringify(state));
@@ -27,23 +34,32 @@ const App: React.FC = () => {
 
   const financials = useMemo(() => calculateFinancials(state), [state]);
 
-  const handleAddTransaction = (newTx: Omit<Transaction, 'id'>) => {
+  const chatContext = useMemo(() => ({
+    status: state.status,
+    totalRevenue: financials.totalRevenue,
+    totalExpenses: financials.totalExpenses,
+    socialCharges: financials.socialCharges,
+    netProfit: financials.netProfit,
+    chargeRate: financials.chargeRate,
+  }), [state.status, financials]);
+
+  const handleAddTransaction = useCallback((newTx: Omit<Transaction, 'id'>) => {
     const transaction: Transaction = {
       ...newTx,
-      id: Math.random().toString(36).substr(2, 9)
+      id: crypto.randomUUID()
     };
     setState(prev => ({
       ...prev,
       transactions: [transaction, ...prev.transactions]
     }));
-  };
+  }, []);
 
-  const handleDeleteTransaction = (id: string) => {
+  const handleDeleteTransaction = useCallback((id: string) => {
     setState(prev => ({
       ...prev,
-      transactions: prev.transactions.filter(t => t.id !== id)
+      transactions: prev.transactions.filter((t: Transaction) => t.id !== id)
     }));
-  };
+  }, []);
 
   const handleStatusChange = (status: BusinessStatus) => {
     setState(prev => ({
@@ -53,22 +69,12 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleAiAnalyze = async () => {
-    setIsAnalyzing(true);
-    setAiAnalysis(null);
-    const result = await analyzeFinancials(state, financials);
-    setAiAnalysis(result || "Erreur d'analyse");
-    setIsAnalyzing(false);
-  };
-
-  const chartData = useMemo(() => {
-    return [
-      { name: 'CA Total', value: financials.totalRevenue, color: '#4F46E5' },
-      { name: 'Dépenses', value: financials.totalExpenses, color: '#EF4444' },
-      { name: 'Charges Sociales', value: financials.socialCharges, color: '#F59E0B' },
-      { name: 'Bénéfice Net', value: financials.netProfit, color: '#10B981' },
-    ];
-  }, [financials]);
+  const chartData = useMemo((): ChartEntry[] => [
+    { name: 'CA Total', value: financials.totalRevenue, color: '#4F46E5' },
+    { name: 'Dépenses', value: financials.totalExpenses, color: '#EF4444' },
+    { name: 'Charges Sociales', value: financials.socialCharges, color: '#F59E0B' },
+    { name: 'Bénéfice Net', value: financials.netProfit, color: '#10B981' },
+  ], [financials]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -77,7 +83,7 @@ const App: React.FC = () => {
         <aside className="w-full lg:w-72 bg-white border-r border-slate-200 p-6 flex flex-col gap-8">
         <div>
           <h1 className="text-2xl font-bold text-indigo-600 flex items-center gap-2 mb-2">
-            <i className="fas fa-calculator"></i>
+            <i className="fas fa-calculator" aria-hidden="true"></i>
             ComptaExpert
           </h1>
           <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">Barèmes 2025 inclus</p>
@@ -115,19 +121,16 @@ const App: React.FC = () => {
 
         <div className="mt-auto p-4 bg-indigo-50 rounded-2xl">
           <p className="text-indigo-800 text-sm font-semibold mb-2 flex items-center gap-2">
-            <i className="fas fa-lightbulb"></i>
+            <i className="fas fa-lightbulb" aria-hidden="true"></i>
             Conseil IA
           </p>
           <button
-            onClick={handleAiAnalyze}
-            disabled={isAnalyzing}
-            className={`w-full py-2 px-4 rounded-xl text-sm font-bold transition-all ${
-              isAnalyzing 
-                ? 'bg-indigo-200 text-indigo-400 cursor-not-allowed' 
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
-            }`}
+            type="button"
+            onClick={() => setIsChatOpen(true)}
+            className="w-full py-2 px-4 rounded-xl text-sm font-bold transition-all bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
           >
-            {isAnalyzing ? 'Analyse...' : 'Lancer l\'Analyse'}
+            <i className="fas fa-comments" aria-hidden="true"></i>
+            Discuter avec l'IA
           </button>
         </div>
       </aside>
@@ -162,24 +165,6 @@ const App: React.FC = () => {
           />
         </div>
 
-        {/* AI Insight Section */}
-        {aiAnalysis && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-indigo-500 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <i className="fas fa-robot text-indigo-600"></i>
-                Analyse Expert Gemini
-              </h3>
-              <button onClick={() => setAiAnalysis(null)} className="text-slate-400 hover:text-slate-600">
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="prose prose-indigo max-w-none text-slate-600 text-sm whitespace-pre-line">
-              {aiAnalysis}
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left: Input & History */}
           <div className="lg:col-span-2">
@@ -194,11 +179,13 @@ const App: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50">
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Catégorie</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Montant</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider"></th>
+                      <th scope="col" className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                      <th scope="col" className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
+                      <th scope="col" className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Catégorie</th>
+                      <th scope="col" className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Montant</th>
+                      <th scope="col" className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <span className="sr-only">Actions</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -220,11 +207,13 @@ const App: React.FC = () => {
                             {tx.type === 'INCOME' ? '+' : '-'} {formatCurrency(tx.amount)}
                           </td>
                           <td className="p-4 text-right">
-                            <button 
+                            <button
+                              type="button"
                               onClick={() => handleDeleteTransaction(tx.id)}
-                              className="text-slate-300 hover:text-rose-500 transition-colors"
+                              aria-label={`Supprimer ${tx.label}`}
+                              className="text-slate-300 hover:text-rose-500 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-400 rounded"
                             >
-                              <i className="fas fa-trash-alt"></i>
+                              <i className="fas fa-trash-alt" aria-hidden="true"></i>
                             </button>
                           </td>
                         </tr>
@@ -250,7 +239,7 @@ const App: React.FC = () => {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {chartData.map((entry, index) => (
+                    {chartData.map((entry: ChartEntry, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Bar>
@@ -260,7 +249,7 @@ const App: React.FC = () => {
 
             <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-2xl text-white shadow-xl shadow-indigo-100">
               <h3 className="font-bold mb-4 flex items-center gap-2">
-                <i className="fas fa-info-circle"></i>
+                <i className="fas fa-info-circle" aria-hidden="true"></i>
                 Cotisations 2025
               </h3>
               <p className="text-indigo-100 text-sm leading-relaxed mb-4">
@@ -278,6 +267,12 @@ const App: React.FC = () => {
       <footer className="w-full text-center py-4 text-xs text-slate-400 border-t border-slate-100">
         © {new Date().getFullYear()} ComptaExpert. Tous droits réservés.
       </footer>
+
+      <ChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        context={chatContext}
+      />
     </div>
   );
 };

@@ -14,7 +14,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, color, tr
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-          <i className={`fas ${icon} text-white text-xl`}></i>
+          <i className={`fas ${icon} text-white text-xl`} aria-hidden="true"></i>
         </div>
         {trend && (
           <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-50 text-green-600">
@@ -28,4 +28,4 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon, color, tr
   );
 };
 
-export default SummaryCard;
+export default React.memo(SummaryCard);

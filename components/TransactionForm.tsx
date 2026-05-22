@@ -33,12 +33,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
   return (
     <form onSubmit={handleSubmit} className="bg-slate-900 p-6 rounded-2xl shadow-xl border border-slate-800 mb-8 transition-all hover:border-indigo-500/30">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-        <i className="fas fa-plus-circle text-indigo-400"></i>
+        <i className="fas fa-plus-circle text-indigo-400" aria-hidden="true"></i>
         Nouvelle Transaction
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="flex flex-col gap-1 lg:col-span-2">
-          <label htmlFor="tx-label" className="text-xs font-bold text-white uppercase tracking-wider">Libelle</label>
+          <label htmlFor="tx-label" className="text-xs font-bold text-white uppercase tracking-wider">Libellé</label>
           <input
             id="tx-label"
             type="text"
@@ -46,18 +46,21 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
             onChange={(e) => setLabel(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             placeholder="Ex: Facture Client X"
+            required
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="tx-amount" className="text-xs font-bold text-white uppercase tracking-wider">Montant (?)</label>
+          <label htmlFor="tx-amount" className="text-xs font-bold text-white uppercase tracking-wider">Montant (€)</label>
           <input
             id="tx-amount"
             type="number"
             step="0.01"
+            min="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             placeholder="0.00"
+            required
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -108,4 +111,4 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
   );
 };
 
-export default TransactionForm;
+export default React.memo(TransactionForm);
