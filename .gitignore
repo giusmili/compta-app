@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .env.local
 *.pdf
+*.zip
+rapport-wcag.html

@@ -101,7 +101,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
         <div className="flex flex-col gap-1 lg:justify-end">
           <button
             type="submit"
-            className="bg-indigo-500 text-white rounded-lg py-2 px-4 hover:bg-indigo-600 transition-all font-bold shadow-lg shadow-indigo-500/20 active:scale-95"
+            className="bg-indigo-600 text-white rounded-lg py-2 px-4 hover:bg-indigo-700 transition-all font-bold shadow-lg shadow-indigo-500/20 active:scale-95"
           >
             Ajouter
           </button>

@@ -86,7 +86,7 @@ const App: React.FC = () => {
             <i className="fas fa-calculator" aria-hidden="true"></i>
             ComptaExpert
           </h1>
-          <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">Barèmes 2025 inclus</p>
+          <p className="text-slate-500 text-xs uppercase tracking-widest font-bold">Barèmes 2025 inclus</p>
         </div>
 
         <nav className="flex flex-col gap-4">
@@ -173,7 +173,7 @@ const App: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-bold text-slate-800">Historique des Transactions</h3>
-                <span className="text-xs text-slate-400">{state.transactions.length} opérations</span>
+                <span className="text-xs text-slate-500">{state.transactions.length} opérations</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -191,7 +191,7 @@ const App: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {state.transactions.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-400 text-sm">Aucune transaction enregistrée.</td>
+                        <td colSpan={5} className="p-8 text-center text-slate-500 text-sm">Aucune transaction enregistrée.</td>
                       </tr>
                     ) : (
                       state.transactions.map((tx) => (
@@ -264,7 +264,7 @@ const App: React.FC = () => {
         </div>
       </main>
       </div>
-      <footer className="w-full text-center py-4 text-xs text-slate-400 border-t border-slate-100">
+      <footer className="w-full text-center py-4 text-xs text-slate-500 border-t border-slate-100">
         © {new Date().getFullYear()} ComptaExpert. Tous droits réservés.
       </footer>
 
