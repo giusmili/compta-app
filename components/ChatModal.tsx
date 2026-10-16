@@ -87,10 +87,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-slate-900">Conseiller IA</h2>
-                <span className="text-xs text-emerald-500 font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span>
-                  En ligne · Propulsé par Claude
-                </span>
               </div>
             </div>
             <button
