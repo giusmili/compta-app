@@ -17,9 +17,7 @@ Also: `npm run typecheck` (tsc) and `npm test` (Vitest, `tests/`).
 
 Create `.env.local` (and set the same variables in Vercel → Settings → Environment Variables; they are read server-side only, never bundled):
 ```
-API_KEY_CLAUDE=sk-ant-...   # Anthropic API key (used by claudeService.ts)
-OPENAI_API_KEY=sk-...        # OpenAI key (used by openaiService.ts)
-CHAT_PROVIDER=claude         # 'claude' (default) or 'openai'
+OPENAI_API_KEY=sk-...        # OpenAI key, read server-side by api/_lib/handler.ts
 ```
 
 ## Architecture
@@ -44,7 +42,7 @@ AppState (localStorage)
 | `constants.ts` | French URSSAF 2025 social charge rates per `BusinessStatus` and transaction categories |
 | `utils/calculations.ts` | `calculateFinancials(state)` — derives all financial metrics; social charges apply to revenue, not profit |
 | `services/chatService.ts` | Browser side: `fetch('/api/chat')` only — no API key in the bundle |
-| `api/chat.ts` + `api/_lib/handler.ts` | Vercel serverless function: validates input, builds the system prompt + financial context, calls Anthropic or OpenAI (`CHAT_PROVIDER`) with keys from server env, basic per-IP rate limit |
+| `api/chat.ts` + `api/_lib/handler.ts` | Vercel serverless function: validates input, builds the system prompt + financial context, calls OpenAI (`gpt-4o-mini`) with `OPENAI_API_KEY` from server env, basic per-IP rate limit |
 | `shared/chat.ts` | Types and limits shared by front and API |
 | `components/ChatModal.tsx` | Maintains **two separate message arrays**: `displayMessages` (includes welcome message shown in UI) and `apiMessages` (only actual conversation turns sent to the API) |
 

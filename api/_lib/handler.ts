@@ -76,20 +76,6 @@ const buildSystem = (c?: FinancialContext): string =>
     ? `${SYSTEM_PROMPT}\n\nSituation financière actuelle de l'utilisateur :\n- Statut : ${c.status}\n- CA : ${c.totalRevenue.toFixed(2)} €\n- Dépenses : ${c.totalExpenses.toFixed(2)} €\n- Charges sociales : ${c.socialCharges.toFixed(2)} €\n- Bénéfice net : ${c.netProfit.toFixed(2)} €\n- Taux de charges : ${(c.chargeRate * 100).toFixed(1)}%`
     : SYSTEM_PROMPT;
 
-const callClaude = async (messages: ChatMessage[], system: string, apiKey: string): Promise<string> => {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system, messages }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  const data = (await res.json()) as { content?: { type: string; text?: string }[]; error?: { message?: string } };
-  if (!res.ok) throw new Error(`Anthropic ${res.status}: ${data.error?.message ?? 'erreur'}`);
-  const block = data.content?.[0];
-  if (block?.type !== 'text' || !block.text) throw new Error('Réponse Anthropic inattendue');
-  return block.text;
-};
-
 const callOpenAI = async (messages: ChatMessage[], system: string, apiKey: string): Promise<string> => {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -125,17 +111,14 @@ export const handleChat = async (req: Request): Promise<Response> => {
   if (!messages) return json({ error: 'Messages invalides' }, 400);
   const system = buildSystem(parseContext(body.context));
 
-  const provider = process.env.CHAT_PROVIDER === 'openai' ? 'openai' : 'claude';
-  const apiKey = provider === 'openai' ? process.env.OPENAI_API_KEY : process.env.API_KEY_CLAUDE;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error(`Clé API manquante pour le fournisseur "${provider}"`);
+    console.error('OPENAI_API_KEY manquante');
     return json({ error: 'Service IA non configuré' }, 503);
   }
 
   try {
-    const reply = provider === 'openai'
-      ? await callOpenAI(messages, system, apiKey)
-      : await callClaude(messages, system, apiKey);
+    const reply = await callOpenAI(messages, system, apiKey);
     return json({ reply });
   } catch (err) {
     console.error('Chat provider error:', err);
