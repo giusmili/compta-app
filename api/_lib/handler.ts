@@ -1,12 +1,6 @@
-import { BusinessStatus } from '../../types';
-import {
-  ChatMessage,
-  ChatRequestBody,
-  FinancialContext,
-  MAX_ASSISTANT_CHARS,
-  MAX_HISTORY,
-  MAX_USER_CHARS,
-} from '../../shared/chat';
+import { BusinessStatus } from '../../types.js';
+import type { ChatMessage, ChatRequestBody, FinancialContext } from '../../shared/chat.js';
+import { MAX_ASSISTANT_CHARS, MAX_HISTORY, MAX_USER_CHARS } from '../../shared/chat.js';
 
 const TIMEOUT_MS = 30_000;
 const RATE_LIMIT = 20; // requêtes par IP et par minute (best-effort, en mémoire)
