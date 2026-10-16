@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CATEGORIES } from '../constants';
 import { Transaction } from '../types';
+import { todayLocal } from '../utils/storage';
 
 interface TransactionFormProps {
   onAdd: (transaction: Omit<Transaction, 'id'>) => void;
@@ -11,15 +12,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'INCOME' | 'EXPENSE'>('INCOME');
   const [category, setCategory] = useState(CATEGORIES[0]);
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayLocal);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!label || !amount) return;
+    const value = parseFloat(amount);
+    if (!label.trim() || !Number.isFinite(value) || value <= 0) return;
 
     onAdd({
-      label,
-      amount: parseFloat(amount),
+      label: label.trim(),
+      amount: value,
       type,
       category,
       date,
@@ -27,7 +29,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
 
     setLabel('');
     setAmount('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(todayLocal());
   };
 
   return (
@@ -55,7 +57,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd }) => {
             id="tx-amount"
             type="number"
             step="0.01"
-            min="0"
+            min="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"

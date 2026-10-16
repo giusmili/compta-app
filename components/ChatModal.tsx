@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { sendChatMessage, ChatMessage, FinancialContext } from '../services/claudeService';
+import './chat.css';
+import { sendChatMessage, ChatMessage, FinancialContext } from '../services/chatService';
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -11,80 +12,6 @@ interface ChatModalProps {
 
 const WELCOME_CONTENT =
   "Bonjour ! Je suis votre conseiller IA ComptaExpert. Je peux vous aider sur la comptabilité, les charges sociales, la fiscalité ou l'utilisation de l'application. Comment puis-je vous aider ?";
-
-const CHAT_STYLES = `
-  @keyframes backdropZoom {
-    from { transform: scale(0); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
-  }
-  @keyframes modalZoomIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-  }
-  @keyframes typingBounce {
-    0%, 80%, 100% { transform: translateY(0); }
-    40%           { transform: translateY(-5px); }
-  }
-  .chat-backdrop {
-    animation: backdropZoom 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    transform-origin: center center;
-  }
-  .chat-modal-card {
-    animation: modalZoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
-    transform-origin: center center;
-  }
-  .typing-dot { animation: typingBounce 1.2s infinite; }
-  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-  /* Markdown styles — assistant bubble only */
-  .chat-md { font-size: 0.875rem; line-height: 1.6; }
-  .chat-md p { margin-bottom: 0.5rem; }
-  .chat-md p:last-child { margin-bottom: 0; }
-  .chat-md ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.5rem; }
-  .chat-md ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.5rem; }
-  .chat-md li { margin-bottom: 0.2rem; }
-  .chat-md strong { font-weight: 700; }
-  .chat-md em { font-style: italic; }
-  .chat-md h1 { font-size: 1rem;   font-weight: 700; margin: 0.75rem 0 0.375rem; }
-  .chat-md h2 { font-size: 0.9rem; font-weight: 700; margin: 0.75rem 0 0.375rem; }
-  .chat-md h3 { font-size: 0.875rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
-  .chat-md h1:first-child,
-  .chat-md h2:first-child,
-  .chat-md h3:first-child { margin-top: 0; }
-  .chat-md code {
-    background: rgba(0,0,0,0.09);
-    padding: 0.1rem 0.35rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-family: ui-monospace, monospace;
-  }
-  .chat-md pre {
-    background: #1e293b;
-    color: #e2e8f0;
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    overflow-x: auto;
-    margin-bottom: 0.5rem;
-    font-size: 0.75rem;
-    font-family: ui-monospace, monospace;
-    line-height: 1.5;
-  }
-  .chat-md pre code { background: none; padding: 0; color: inherit; }
-  .chat-md blockquote {
-    border-left: 3px solid #94a3b8;
-    padding-left: 0.75rem;
-    margin: 0.5rem 0;
-    color: #64748b;
-    font-style: italic;
-  }
-  .chat-md a { color: #4f46e5; text-decoration: underline; }
-  .chat-md hr { border: none; border-top: 1px solid #cbd5e1; margin: 0.6rem 0; }
-  .chat-md table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; font-size: 0.8rem; }
-  .chat-md th { background: #e2e8f0; font-weight: 600; padding: 0.35rem 0.6rem; text-align: left; border: 1px solid #cbd5e1; }
-  .chat-md td { padding: 0.3rem 0.6rem; border: 1px solid #cbd5e1; }
-  .chat-md tr:nth-child(even) td { background: #f8fafc; }
-`;
 
 const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([
@@ -126,7 +53,8 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
       const assistantMsg: ChatMessage = { role: 'assistant', content: reply };
       setDisplayMessages(prev => [...prev, assistantMsg]);
       setApiMessages(prev => [...prev, assistantMsg]);
-    } catch {
+    } catch (err) {
+      console.error('Chat error:', err);
       setDisplayMessages(prev => [
         ...prev,
         { role: 'assistant', content: 'Désolé, une erreur est survenue. Veuillez réessayer.' },
@@ -140,18 +68,16 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
 
   return (
     <>
-      <style>{CHAT_STYLES}</style>
-
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Conseiller IA ComptaExpert"
+        role="presentation"
         className="chat-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={onClose}
+        onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Conseiller IA ComptaExpert"
           className="chat-modal-card bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col h-[75vh] max-h-[640px]"
-          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
@@ -178,7 +104,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3" aria-live="polite">
             {displayMessages.map((msg, i) => (
               <div
                 key={i}
@@ -225,7 +151,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
           {/* Input */}
           <div className="px-4 py-3 border-t border-slate-100 flex-shrink-0">
             <form
-              onSubmit={e => { e.preventDefault(); handleSend(); }}
+              onSubmit={e => { e.preventDefault(); void handleSend(); }}
               className="flex gap-2"
             >
               <input
@@ -234,6 +160,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, context }) => {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder="Posez votre question..."
+                maxLength={1000}
                 aria-label="Message au conseiller IA"
                 className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />

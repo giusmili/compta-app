@@ -18,7 +18,8 @@ No test framework is configured.
 Create `.env.local` with:
 ```
 API_KEY_CLAUDE=sk-ant-...   # Anthropic API key (used by claudeService.ts)
-GEMINI_API_KEY=...           # Google Gemini key (used by geminiService.ts, currently unused in UI)
+OPENAI_API_KEY=sk-...        # OpenAI key (used by openaiService.ts)
+CHAT_PROVIDER=claude         # 'claude' (default) or 'openai'
 ```
 
 ## Architecture
@@ -42,8 +43,8 @@ AppState (localStorage)
 | `types.ts` | All shared types: `Transaction`, `AppState`, `FinancialStats`, `BusinessStatus` |
 | `constants.ts` | French URSSAF 2025 social charge rates per `BusinessStatus` and transaction categories |
 | `utils/calculations.ts` | `calculateFinancials(state)` — derives all financial metrics; social charges apply to revenue, not profit |
-| `services/claudeService.ts` | Calls Anthropic API directly from the browser (`dangerouslyAllowBrowser: true`); `sendChatMessage` receives the conversation history + live financial context as system prompt injection |
-| `services/geminiService.ts` | Gemini integration (`@google/genai`); implemented but not wired to any UI component currently |
+| `services/chatService.ts` | Shared chat types, system prompt + live financial context injection; dispatches to the provider selected by `CHAT_PROVIDER` |
+| `services/claudeService.ts` / `openaiService.ts` | One module per provider; both are called from the browser (keys end up in the bundle, see security note) |
 | `components/ChatModal.tsx` | Maintains **two separate message arrays**: `displayMessages` (includes welcome message shown in UI) and `apiMessages` (only actual conversation turns sent to the API) |
 
 ### Styling

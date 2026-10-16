@@ -1,26 +1,20 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Transaction, AppState, BusinessStatus } from './types';
-import { STATUS_RATES } from './constants';
 import { calculateFinancials, formatCurrency } from './utils/calculations';
 import SummaryCard from './components/SummaryCard';
 import TransactionForm from './components/TransactionForm';
-import ChatModal from './components/ChatModal';
+import { DEFAULT_STATE, STORAGE_KEY, parseStoredState, clampRate } from './utils/storage';
+
+const ChatModal = lazy(() => import('./components/ChatModal'));
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type ChartEntry = { name: string; value: number; color: string };
 
-const DEFAULT_STATE: AppState = {
-  transactions: [],
-  status: BusinessStatus.MICRO_SERVICE,
-  customChargeRate: 0.212,
-};
-
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     try {
-      const saved = localStorage.getItem('compta_data');
-      return saved ? JSON.parse(saved) : DEFAULT_STATE;
+      return parseStoredState(localStorage.getItem(STORAGE_KEY));
     } catch {
       return DEFAULT_STATE;
     }
@@ -29,7 +23,11 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('compta_data', JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // stockage indisponible (mode privé, quota) : on continue sans persistance
+    }
   }, [state]);
 
   const financials = useMemo(() => calculateFinancials(state), [state]);
@@ -65,7 +63,6 @@ const App: React.FC = () => {
     setState(prev => ({
       ...prev,
       status,
-      customChargeRate: status === BusinessStatus.CUSTOM ? prev.customChargeRate : STATUS_RATES[status]
     }));
   };
 
@@ -111,8 +108,13 @@ const App: React.FC = () => {
                 id="custom-charge-rate"
                 type="number"
                 step="0.1"
-                value={state.customChargeRate * 100}
-                onChange={(e) => setState(prev => ({ ...prev, customChargeRate: parseFloat(e.target.value) / 100 }))}
+                min="0"
+                max="100"
+                value={Math.round(state.customChargeRate * 1000) / 10}
+                onChange={(e) => {
+                  const rate = clampRate(parseFloat(e.target.value) / 100);
+                  setState(prev => ({ ...prev, customChargeRate: rate }));
+                }}
                 className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium outline-none"
               />
             </div>
@@ -130,7 +132,7 @@ const App: React.FC = () => {
             className="w-full py-2 px-4 rounded-xl text-sm font-bold transition-all bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
           >
             <i className="fas fa-comments" aria-hidden="true"></i>
-            Discuter avec l'IA
+            Discuter avec l&apos;IA
           </button>
         </div>
       </aside>
@@ -268,11 +270,15 @@ const App: React.FC = () => {
         © {new Date().getFullYear()} ComptaExpert. Tous droits réservés.
       </footer>
 
-      <ChatModal
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        context={chatContext}
-      />
+      {isChatOpen && (
+        <Suspense fallback={null}>
+          <ChatModal
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            context={chatContext}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
