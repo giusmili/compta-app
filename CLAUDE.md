@@ -11,11 +11,11 @@ npm run preview   # Preview the production build
 npm run lint      # ESLint on all .ts/.tsx files
 ```
 
-No test framework is configured.
+Also: `npm run typecheck` (tsc) and `npm test` (Vitest, `tests/`).
 
 ## Environment variables
 
-Create `.env.local` with:
+Create `.env.local` (and set the same variables in Vercel → Settings → Environment Variables; they are read server-side only, never bundled):
 ```
 API_KEY_CLAUDE=sk-ant-...   # Anthropic API key (used by claudeService.ts)
 OPENAI_API_KEY=sk-...        # OpenAI key (used by openaiService.ts)
@@ -43,17 +43,18 @@ AppState (localStorage)
 | `types.ts` | All shared types: `Transaction`, `AppState`, `FinancialStats`, `BusinessStatus` |
 | `constants.ts` | French URSSAF 2025 social charge rates per `BusinessStatus` and transaction categories |
 | `utils/calculations.ts` | `calculateFinancials(state)` — derives all financial metrics; social charges apply to revenue, not profit |
-| `services/chatService.ts` | Shared chat types, system prompt + live financial context injection; dispatches to the provider selected by `CHAT_PROVIDER` |
-| `services/claudeService.ts` / `openaiService.ts` | One module per provider; both are called from the browser (keys end up in the bundle, see security note) |
+| `services/chatService.ts` | Browser side: `fetch('/api/chat')` only — no API key in the bundle |
+| `api/chat.ts` + `api/_lib/handler.ts` | Vercel serverless function: validates input, builds the system prompt + financial context, calls Anthropic or OpenAI (`CHAT_PROVIDER`) with keys from server env, basic per-IP rate limit |
+| `shared/chat.ts` | Types and limits shared by front and API |
 | `components/ChatModal.tsx` | Maintains **two separate message arrays**: `displayMessages` (includes welcome message shown in UI) and `apiMessages` (only actual conversation turns sent to the API) |
 
 ### Styling
 
-Tailwind CSS is loaded via CDN in `index.html` — there is no `tailwind.config.js` or PostCSS pipeline. Custom CSS is injected as a `<style>` tag inside `ChatModal.tsx` (for chat animations and markdown rendering).
+Tailwind CSS v4 is built through `@tailwindcss/vite` (entry: `index.css`). Chat animations and markdown styles live in `components/chat.css`.
 
 ### Vite configuration note
 
-`vite.config.ts` includes a custom `stubNodeBuiltins` plugin that intercepts all `node:*` imports. This is required because `@anthropic-ai/sdk` bundles its agent-toolset (a server-side feature) which transitively imports `node:crypto`, `node:fs/promises`, `node:stream`, etc. The stubs are no-ops — the agent-toolset is never called at runtime.
+`vite.config.ts` has a dev-only `dev-api-chat` plugin that serves `/api/chat` with the same handler as the Vercel function, loading `.env.local` into the server process (never into the client bundle).
 
 ### Social charge calculation
 
