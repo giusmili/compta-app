@@ -76,6 +76,12 @@ const buildSystem = (c?: FinancialContext): string =>
     ? `${SYSTEM_PROMPT}\n\nSituation financière actuelle de l'utilisateur :\n- Statut : ${c.status}\n- CA : ${c.totalRevenue.toFixed(2)} €\n- Dépenses : ${c.totalExpenses.toFixed(2)} €\n- Charges sociales : ${c.socialCharges.toFixed(2)} €\n- Bénéfice net : ${c.netProfit.toFixed(2)} €\n- Taux de charges : ${(c.chargeRate * 100).toFixed(1)}%`
     : SYSTEM_PROMPT;
 
+class UpstreamError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+  }
+}
+
 const callOpenAI = async (messages: ChatMessage[], system: string, apiKey: string): Promise<string> => {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -88,7 +94,7 @@ const callOpenAI = async (messages: ChatMessage[], system: string, apiKey: strin
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   const data = (await res.json()) as { choices?: { message?: { content?: string | null } }[]; error?: { message?: string } };
-  if (!res.ok) throw new Error(`OpenAI ${res.status}: ${data.error?.message ?? 'erreur'}`);
+  if (!res.ok) throw new UpstreamError(res.status, `OpenAI ${res.status}: ${data.error?.message ?? 'erreur'}`);
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error('Réponse OpenAI vide');
   return text;
@@ -111,7 +117,7 @@ export const handleChat = async (req: Request): Promise<Response> => {
   if (!messages) return json({ error: 'Messages invalides' }, 400);
   const system = buildSystem(parseContext(body.context));
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     console.error('OPENAI_API_KEY manquante');
     return json({ error: 'Service IA non configuré' }, 503);
@@ -122,6 +128,7 @@ export const handleChat = async (req: Request): Promise<Response> => {
     return json({ reply });
   } catch (err) {
     console.error('Chat provider error:', err);
-    return json({ error: 'Le service IA est indisponible' }, 502);
+    const upstream = err instanceof UpstreamError ? err.status : undefined;
+    return json({ error: 'Le service IA est indisponible', upstream }, 502);
   }
 };
